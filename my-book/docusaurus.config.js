@@ -14,7 +14,7 @@ const config = {
     v4: true,
   },
 
-  url: 'https://physical-ai-textbook.vercel.app',
+  url: 'https://spec-kit-hackathon.vercel.app',
   baseUrl: '/',
 
   organizationName: 'physical-ai-textbook',
@@ -67,7 +67,7 @@ const config = {
             label: 'Start Learning',
           },
           {
-            href: 'https://github.com/physical-ai-textbook/physical-ai-textbook',
+            href: 'https://github.com/AmaanIqbal0011/spec-kit-hackathon',
             label: 'GitHub',
             position: 'right',
           },
