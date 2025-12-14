@@ -1,40 +1,27 @@
 // @ts-check
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
-// There are various equivalent ways to declare your Docusaurus config.
-// See: https://docusaurus.io/docs/api/docusaurus-config
 
 import {themes as prismThemes} from 'prism-react-renderer';
 
-// This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
-
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'AI-Native Robotics Textbook',
-  tagline: 'Learn Physical AI, ROS 2, Simulation, and VLA Systems',
+  title: 'Physical AI & Humanoid Robotics',
+  tagline: 'From Digital Intelligence to Physical Embodiment',
   favicon: 'img/favicon.ico',
 
-  // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
-    v4: true, // Improve compatibility with the upcoming Docusaurus v4
+    v4: true,
   },
 
-  // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
+  url: 'https://physical-ai-textbook.vercel.app',
   baseUrl: '/',
 
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'physical-ai-textbook',
+  projectName: 'physical-ai-textbook',
 
   onBrokenLinks: 'throw',
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -47,26 +34,9 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          routeBasePath: '/docs',
         },
-        blog: {
-          showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-          // Useful options to enforce blogging best practices
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
-        },
+        blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -77,38 +47,29 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      // Replace with your project's social card
-      image: 'img/docusaurus-social-card.jpg',
+      image: 'img/social-card.jpg',
       colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: 'AI-Native Robotics',
+        title: 'Physical AI Textbook',
         logo: {
-          alt: 'AI Robotics Logo',
+          alt: 'Physical AI Logo',
           src: 'img/logo.svg',
         },
         items: [
           {
-            to: '/',
-            label: 'Home',
-            position: 'left',
-          },
-          {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Lessons',
+            label: 'Start Learning',
           },
           {
-            to: '/docs/lesson-06',
-            label: 'Capstone',
-            position: 'left',
-          },
-          {
-            to: '/about',
-            label: 'About',
-            position: 'left',
+            href: 'https://github.com/physical-ai-textbook/physical-ai-textbook',
+            label: 'GitHub',
+            position: 'right',
           },
         ],
       },
@@ -116,33 +77,63 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Learning Resources',
+            title: 'Learning Modules',
             items: [
               {
-                label: 'Start Learning',
-                to: '/docs/lesson-01',
+                label: 'Introduction to Physical AI',
+                to: '/docs/introduction',
               },
               {
-                label: 'Capstone Project',
-                to: '/docs/lesson-06',
+                label: 'ROS 2 Fundamentals',
+                to: '/docs/ros2',
+              },
+              {
+                label: 'Simulation Environments',
+                to: '/docs/simulation',
               },
             ],
           },
           {
-            title: 'About',
+            title: 'Advanced Topics',
             items: [
               {
-                label: 'About This Book',
-                to: '/about',
+                label: 'NVIDIA Isaac Platform',
+                to: '/docs/isaac',
+              },
+              {
+                label: 'Vision-Language-Action',
+                to: '/docs/vla',
+              },
+              {
+                label: 'Capstone Project',
+                to: '/docs/capstone',
+              },
+            ],
+          },
+          {
+            title: 'Resources',
+            items: [
+              {
+                label: 'ROS 2 Documentation',
+                href: 'https://docs.ros.org/en/humble/',
+              },
+              {
+                label: 'NVIDIA Isaac Sim',
+                href: 'https://developer.nvidia.com/isaac-sim',
+              },
+              {
+                label: 'Gazebo Simulation',
+                href: 'https://gazebosim.org/',
               },
             ],
           },
         ],
-        copyright: `AI-Native Robotics Textbook | Created for Hackathon 2025 | Built with Docusaurus`,
+        copyright: `Physical AI & Humanoid Robotics Textbook | Built with Docusaurus | ${new Date().getFullYear()}`,
       },
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: ['bash', 'python', 'yaml'],
       },
     }),
 };
