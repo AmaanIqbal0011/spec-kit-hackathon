@@ -1,0 +1,4 @@
+builder:
+  image: python:3.11-slim  # lightweight Python image
+  commands:
+    - ./start.sh
