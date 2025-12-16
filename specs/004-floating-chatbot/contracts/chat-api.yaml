@@ -1,0 +1,160 @@
+openapi: 3.0.3
+info:
+  title: Physical AI Textbook Chat API
+  description: API for the floating chatbot to communicate with the RAG agent
+  version: 1.0.0
+  contact:
+    name: Physical AI Textbook Team
+
+servers:
+  - url: https://api.physical-ai-textbook.com
+    description: Production server
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+  /chat:
+    post:
+      summary: Send a question to the AI agent
+      description: |
+        Accepts a user question, retrieves relevant context from the textbook,
+        and returns an AI-generated response based on the book content.
+      operationId: chat
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              simple_question:
+                summary: Simple concept question
+                value:
+                  query: "What is ROS 2?"
+              detailed_question:
+                summary: Detailed implementation question
+                value:
+                  query: "How do I create a publisher node in ROS 2 using Python?"
+      responses:
+        '200':
+          description: Successful response from AI agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    response: "ROS 2 (Robot Operating System 2) is a flexible framework for writing robot software. It provides tools, libraries, and conventions for building complex robotic systems..."
+        '400':
+          description: Invalid request (empty or malformed query)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                empty_query:
+                  summary: Empty query error
+                  value:
+                    detail: "Query cannot be empty"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Server error
+                  value:
+                    detail: "An error occurred while processing your request"
+        '503':
+          description: Service unavailable (AI service down)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                service_unavailable:
+                  summary: AI service unavailable
+                  value:
+                    detail: "AI service is temporarily unavailable"
+
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API
+      operationId: health
+      tags:
+        - System
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: Healthy status
+                  value:
+                    status: "healthy"
+                    version: "1.0.0"
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The user's question about the textbook content
+          minLength: 1
+          maxLength: 10000
+          example: "What is ROS 2?"
+
+    ChatResponse:
+      type: object
+      required:
+        - response
+      properties:
+        response:
+          type: string
+          description: The AI agent's response to the query
+          example: "ROS 2 is a flexible framework for writing robot software..."
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: "Query cannot be empty"
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Current health status
+          example: "healthy"
+        version:
+          type: string
+          description: API version
+          example: "1.0.0"
+
+tags:
+  - name: Chat
+    description: Chat operations with the AI agent
+  - name: System
+    description: System and health endpoints

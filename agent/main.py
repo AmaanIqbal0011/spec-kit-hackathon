@@ -156,10 +156,10 @@ def get_embedding(text: str) -> list[float]:
         raise ValueError("Cannot generate embedding for empty text")
 
     try:
-        # Use Cohere embed-english-v3.0 model with search_query input type (T038-T039)
+        # Use Cohere embed-multilingual-v3.0 model with search_query input type (T038-T039)
         response = cohere_client.embed(
             texts=[text],
-            model="embed-english-v3.0",
+            model="embed-multilingual-v3.0",
             input_type="search_query",
 
         )
@@ -239,23 +239,47 @@ def retrieve(query: str) -> str:
 # Define INSTRUCTIONS constant as multiline string (T051)
 INSTRUCTIONS = """You are BookRAGAgent, a specialized assistant for the Physical AI & Humanoid Robotics textbook.
 
+CORE BEHAVIOR:
+- You are a polite, calm, and helpful textbook assistant
+- Your primary role is to answer questions strictly from the book using retrieved context
+
 CRITICAL RULES:
-1. You are BOOK-SPECIFIC - you ONLY answer questions about this textbook (T052)
-2. You MUST call the retrieve tool FIRST before answering ANY question (T053)
-3. Use ONLY the retrieved content to answer - NEVER use external knowledge (T054)
-4. If no relevant content is found OR the context is empty, say "I don't know" (T055, T069)
-5. Include source citations (chapter/section) in your answers when available (T076)
-6. NEVER hallucinate or guess information not in the retrieved context
+1. You are BOOK-SPECIFIC – you ONLY answer questions related to this textbook 
+2. You MUST call the retrieve tool FIRST before answering any textbook-related question 
+3. You MUST use ONLY the retrieved content to answer – NEVER use external knowledge 
+4. You MUST NOT hallucinate, guess, or infer beyond the retrieved context
+5. You MUST include source citations (chapter/section) when available 
 
-When answering:
-- Quote or paraphrase the retrieved content faithfully
-- Include [Source: Chapter X - Section Y] references in your response
-- If multiple sources are relevant, synthesize them coherently while citing all sources
-- Do not add information that is not in the retrieved context
-- Keep answers concise and accurate to the book's content
+CONTEXT HANDLING:
+- If retrieved context is EMPTY or NOT RELEVANT:
+  - Respond politely and warmly
+  - Say something like:
+    "I’m sorry, I couldn’t find this information in the textbook, so I don’t know."
+  - Do NOT attempt to answer beyond the book 
 
-Remember: You can ONLY answer questions that are covered in the book. For anything else, politely decline with "I don't know - this question is not answered in the book."
-"""
+GREETING & SMALL TALK HANDLING:
+- If the user greets you (e.g., "hi", "hello", "assalam o alaikum"):
+  - You MAY respond warmly and politely
+  - Example:
+    "Hello! I’m here to help you with questions from the Physical AI & Humanoid Robotics textbook."
+- Greetings do NOT require calling the retrieve tool
+
+ANSWERING GUIDELINES:
+- Always base answers on retrieved content
+- Quote or faithfully paraphrase the retrieved text
+- Add citations like:
+  [Source: Chapter X – Section Y]
+- If multiple sections are used, synthesize them clearly and cite all relevant sources
+- Keep answers concise, accurate, and strictly aligned with the book
+
+REFUSAL POLICY:
+- If a question is outside the scope of the textbook:
+  - Respond politely:
+    "I don’t know – this question is not answered in the book."
+
+REMEMBER:
+- Book first, context first, accuracy always
+- Be respectful and friendly, but never break textbook boundaries"""
 
 
 # =============================================================================
@@ -274,20 +298,100 @@ print("[BookRAGAgent] Agent constructed with retrieve tool")
 
 
 # =============================================================================
-# 11. MAIN EXECUTION (T060-T064)
+# 11. CONVERSATION HISTORY SUPPORT
 # =============================================================================
 
-def run_rag_query(query: str) -> str:
-    """
-    Run RAG query: retrieve context first, then generate response.
-    This bypasses tool calling issues with some providers.
-    """
-    # Step 1: Retrieve context
-    print("[BookRAGAgent] Retrieving context...")
-    context = do_retrieve(query)  # Call the retrieval function directly
+# Type alias for conversation history
+# Each message is a dict with 'role' ('user' or 'assistant') and 'content'
+ConversationHistory = list[dict[str, str]]
 
-    # Step 2: Build prompt with context
-    augmented_prompt = f"""Based on the following context from the Physical AI & Humanoid Robotics textbook, answer the user's question.
+
+def format_history_for_prompt(history: ConversationHistory, max_turns: int = 5) -> str:
+    """
+    Format conversation history into a string for the prompt.
+
+    Args:
+        history: List of previous messages
+        max_turns: Maximum number of conversation turns to include (default: 5)
+
+    Returns:
+        Formatted string of conversation history
+    """
+    if not history:
+        return ""
+
+    # Take only the last N turns (each turn = user + assistant)
+    recent_history = history[-(max_turns * 2):]
+
+    formatted = []
+    for msg in recent_history:
+        role = "User" if msg.get("role") == "user" else "Assistant"
+        content = msg.get("content", "")
+        formatted.append(f"{role}: {content}")
+
+    return "\n".join(formatted)
+
+
+async def run_rag_query(query: str, history: ConversationHistory = None) -> str:
+    """
+    Run RAG query with conversation history support.
+
+    Args:
+        query: The user's current question
+        history: Optional list of previous messages in the conversation
+
+    Returns:
+        The AI agent's response
+    """
+    if history is None:
+        history = []
+
+    # Step 1: Retrieve context based on both current query and recent context
+    print("[BookRAGAgent] Retrieving context...")
+
+    # If there's history, enhance the retrieval query with recent context
+    if history and len(history) >= 2:
+        # Get the last assistant response for context
+        last_response = ""
+        for msg in reversed(history):
+            if msg.get("role") == "assistant":
+                last_response = msg.get("content", "")[:200]  # First 200 chars
+                break
+
+        # Create enhanced query for better retrieval
+        enhanced_query = f"{query}"
+        if last_response:
+            # Add context hint for follow-up questions
+            enhanced_query = f"Context: {last_response[:100]}... Question: {query}"
+    else:
+        enhanced_query = query
+
+    context = do_retrieve(enhanced_query)
+
+    # Step 2: Format conversation history
+    history_text = format_history_for_prompt(history)
+
+    # Step 3: Build prompt with context and history
+    if history_text:
+        augmented_prompt = f"""You are a helpful assistant for the Physical AI & Humanoid Robotics textbook.
+
+CONVERSATION HISTORY:
+{history_text}
+
+RETRIEVED CONTEXT FROM BOOK:
+{context}
+
+CURRENT USER QUESTION: {query}
+
+INSTRUCTIONS:
+- Use the conversation history to understand follow-up questions and maintain context
+- Answer based on the retrieved context from the book
+- If the context doesn't contain relevant information, say "I don't know - this question is not answered in the book."
+- Reference previous parts of the conversation when relevant
+- Include source citations when available
+- Be concise, accurate, and conversational"""
+    else:
+        augmented_prompt = f"""Based on the following context from the Physical AI & Humanoid Robotics textbook, answer the user's question.
 
 CONTEXT:
 {context}
@@ -300,16 +404,16 @@ INSTRUCTIONS:
 - Include source citations when available
 - Be concise and accurate"""
 
-    # Step 3: Create a simple agent without tools for generation
+    # Step 4: Create a simple agent without tools for generation
     generation_agent = Agent(
         name="BookRAGGenerator",
-        instructions="You are a helpful assistant that answers questions based only on the provided context. Never use external knowledge.",
+        instructions="You are a helpful assistant that answers questions based only on the provided context. Never use external knowledge. Maintain conversational continuity when history is provided.",
         model=model,
         tools=[]  # No tools - just generate
     )
 
-    # Step 4: Run generation
-    result = Runner.run_sync(generation_agent, augmented_prompt)
+    # Step 5: Run generation (async)
+    result = await Runner.run(generation_agent, augmented_prompt)
     return result.final_output
 
 
