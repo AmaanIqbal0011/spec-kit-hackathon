@@ -62,3 +62,4 @@ htmlcov/
 # Temporary files
 *.tmp
 *.temp
+agent/__init__.py
