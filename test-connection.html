@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-box {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+        #result {
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hugging Face Backend Connection Test</h1>
+
+    <div class="test-box">
+        <h3>Current Environment:</h3>
+        <p><strong>Hostname:</strong> <span id="hostname"></span></p>
+        <p><strong>Expected Backend:</strong> <span id="backend"></span></p>
+    </div>
+
+    <div class="test-box">
+        <h3>Tests:</h3>
+        <button onclick="testHealth()">Test Health Check</button>
+        <button onclick="testChat()">Test Chat</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        const HUGGING_FACE_URL = 'https://amaaniqbal0011-hackathon-backend.hf.space';
+        const LOCAL_URL = 'http://localhost:8000';
+
+        function getApiUrl() {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return LOCAL_URL;
+            }
+            return HUGGING_FACE_URL;
+        }
+
+        // Display current environment
+        document.getElementById('hostname').textContent = window.location.hostname;
+        document.getElementById('backend').textContent = getApiUrl();
+
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'black';
+            result.innerHTML += `<span style="color: ${color}">${message}</span>\n`;
+        }
+
+        async function testHealth() {
+            const apiUrl = getApiUrl();
+            log('\n=== Testing Health Check ===');
+            log(`Connecting to: ${apiUrl}/health`);
+
+            try {
+                const response = await fetch(`${apiUrl}/health`);
+                const data = await response.json();
+                log(`✓ Health Check Success!`, 'success');
+                log(`  Status: ${response.status}`);
+                log(`  Response: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                log(`✗ Health Check Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testChat() {
+            const apiUrl = getApiUrl();
+            log('\n=== Testing Chat Endpoint ===');
+            log(`Connecting to: ${apiUrl}/chat`);
+            log('Sending: "What is ROS 2?"');
+
+            try {
+                const response = await fetch(`${apiUrl}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: 'What is ROS 2?',
+                        history: []
+                    })
+                });
+
+                const data = await response.json();
+                log(`✓ Chat Test Success!`, 'success');
+                log(`  Status: ${response.status}`);
+                log(`  Response preview: ${data.response.substring(0, 200)}...`);
+            } catch (error) {
+                log(`✗ Chat Test Failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            document.getElementById('result').innerHTML = '';
+            await testHealth();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testChat();
+            log('\n=== All Tests Complete ===', 'success');
+        }
+    </script>
+</body>
+</html>
